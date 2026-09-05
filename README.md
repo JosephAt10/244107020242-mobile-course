@@ -10,26 +10,26 @@
 # Settting up the development environment
 
 **Flutter Version**
-![image](./photos/1.png)
+![image](./Photos/1.png)
 
 **Flutter doctor**
-![image](./photos/2.png)
+![image](./Photos/2.png)
 
 **Flutter Dcotor Android Licenses**
-![image](./photos/3.png)
+![image](./Photos/3.png)
 
 **Flutter devices**
-![image](./photos/4.png)
+![image](./Photos/4.png)
 
 
 **Creating and running the project**
 
-![image](./photos/7.png)
+![image](./Photos/7.png)
 
 **Before changing the icon**
 
-![image](./photos/5.png)
+![image](./Photos/5.png)
 
 **After changing the icon**
 
-![image](./photos/6.png)
+![image](./Photos/6.png)
