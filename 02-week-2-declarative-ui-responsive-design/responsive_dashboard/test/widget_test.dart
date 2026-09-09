@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:responsive_dashboard/main.dart';
@@ -11,8 +10,10 @@ void main() {
 
     await tester.pumpWidget(const DashboardApp());
 
-    final width = tester.getSize(find.byType(Card).first).width;
-    expect(width, lessThan(kWideBreakpoint));
+    final cards = find.byType(Card);
+    expect(cards, findsNWidgets(6));
+    expect(find.byKey(const Key('narrow-layout')), findsOneWidget);
+    expect(tester.getSize(cards.first).width, lessThan(700));
   });
 
   testWidgets('Dashboard shows two columns on a wide screen', (tester) async {
@@ -22,19 +23,21 @@ void main() {
 
     await tester.pumpWidget(const DashboardApp());
 
-    final width = tester.getSize(find.byType(Card).first).width;
-    expect(width, greaterThan(500));
+    final cards = find.byType(Card);
+    expect(cards, findsNWidgets(6));
+    expect(find.byKey(const Key('wide-layout')), findsOneWidget);
+    expect(tester.getSize(cards.first).width, greaterThan(500));
   });
 
-  testWidgets('Theme toggle switches from light to dark', (tester) async {
+  testWidgets('Theme toggle changes to dark mode', (tester) async {
     await tester.pumpWidget(const DashboardApp());
 
-    expect(find.byType(CupertinoSwitch), findsOneWidget);
-
-    await tester.tap(find.byType(CupertinoSwitch));
+    await tester.tap(find.byKey(themeToggleKey));
     await tester.pumpAndSettle();
 
-    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
-    expect(app.themeMode, ThemeMode.dark);
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+      ThemeMode.dark,
+    );
   });
 }

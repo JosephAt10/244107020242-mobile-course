@@ -273,11 +273,10 @@
 // }
 
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-/// Single source of truth for the responsive breakpoint (refactor requirement #3).
 const double kWideBreakpoint = 700;
+const Key themeToggleKey = Key('theme-toggle');
 
 void main() => runApp(const DashboardApp());
 
@@ -289,27 +288,37 @@ class DashboardApp extends StatefulWidget {
 }
 
 class _DashboardAppState extends State<DashboardApp> {
-  bool isDark = false;
+  ThemeMode themeMode = ThemeMode.light;
 
-  void _toggleTheme(bool value) => setState(() => isDark = value);
+  ThemeData buildTheme(Brightness brightness) {
+    final colors = ColorScheme.fromSeed(
+      seedColor: Colors.teal,
+      brightness: brightness,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colors,
+      scaffoldBackgroundColor: colors.surface,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Academic Overview',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.indigo,
-        brightness: Brightness.light,
+      theme: buildTheme(Brightness.light),
+      darkTheme: buildTheme(Brightness.dark),
+      themeMode: themeMode,
+      home: AcademicOverviewPage(
+        isDark: themeMode == ThemeMode.dark,
+        onThemeChanged: (isDark) {
+          setState(() {
+            themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+          });
+        },
       ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.indigo,
-        brightness: Brightness.dark,
-      ),
-      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-      home: AcademicOverviewPage(isDark: isDark, onDarkChanged: _toggleTheme),
     );
   }
 }
@@ -317,226 +326,243 @@ class _DashboardAppState extends State<DashboardApp> {
 class AcademicOverviewPage extends StatelessWidget {
   const AcademicOverviewPage({
     required this.isDark,
-    required this.onDarkChanged,
+    required this.onThemeChanged,
     super.key,
   });
 
   final bool isDark;
-  final ValueChanged<bool> onDarkChanged;
+  final ValueChanged<bool> onThemeChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Academic Overview'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Semantics(
-              label: isDark ? 'Switch to light theme' : 'Switch to dark theme',
-              toggled: isDark,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isDark ? Icons.dark_mode : Icons.light_mode,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                  const SizedBox(width: 4),
-                  CupertinoSwitch(
-                    value: isDark,
-                    onChanged: onDarkChanged,
-                    activeColor: theme.colorScheme.secondary,
-                  ),
-                ],
-              ),
+      appBar: AppBar(title: const Text('Academic Overview')),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= kWideBreakpoint;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ProfileHeader(
+                  isDark: isDark,
+                  onThemeChanged: onThemeChanged,
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  'Academic progress',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 16),
+                DashboardCards(isWide: isWide),
+              ],
             ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const ProfileHeader(
-                name: 'Jo Alumno',
-                role: 'BSc Computer Science · Year 2',
-              ),
-              const SizedBox(height: 20),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth >= kWideBreakpoint;
-
-                  const cards = [
-                    InfoCard(
-                      title: 'Assignments',
-                      value: '8',
-                      icon: Icons.assignment_outlined,
-                    ),
-                    InfoCard(
-                      title: 'Attendance',
-                      value: '92%',
-                      icon: Icons.event_available_outlined,
-                    ),
-                    InfoCard(
-                      title: 'Portfolio',
-                      value: 'Ready',
-                      icon: Icons.folder_open_outlined,
-                    ),
-                    InfoCard(
-                      title: 'Current week',
-                      value: '02',
-                      icon: Icons.calendar_today_outlined,
-                    ),
-                  ];
-
-                  if (!isWide) {
-                    return Column(
-                      children: [
-                        for (final card in cards) ...[
-                          card,
-                          const SizedBox(height: 16),
-                        ],
-                      ],
-                    );
-                  }
-
-                  final rows = <Widget>[];
-                  for (var i = 0; i < cards.length; i += 2) {
-                    final hasSecond = i + 1 < cards.length;
-                    rows
-                      ..add(
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(child: cards[i]),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child:
-                                  hasSecond ? cards[i + 1] : const SizedBox(),
-                            ),
-                          ],
-                        ),
-                      )
-                      ..add(const SizedBox(height: 16));
-                  }
-                  return Column(children: rows);
-                },
-              ),
-            ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 }
 
 class ProfileHeader extends StatelessWidget {
-  const ProfileHeader({required this.name, required this.role, super.key});
+  const ProfileHeader({
+    required this.isDark,
+    required this.onThemeChanged,
+    super.key,
+  });
 
-  final String name;
-  final String role;
+  final bool isDark;
+  final ValueChanged<bool> onThemeChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-    return Semantics(
-      label: 'Profile: $name, $role',
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: theme.colorScheme.primary,
-              child: Text(
-                name.isNotEmpty ? name[0] : '?',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  color: theme.colorScheme.onPrimary,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: colors.primary,
+            foregroundColor: colors.onPrimary,
+            child: const Icon(Icons.person),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Semantics(
+              label: 'Student profile: Joseph Atem Deng, Mobile Programming, Sem Ganjil 2026',
+              child: ExcludeSemantics(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Joseph Atem Deng',
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleLarge?.copyWith(
+                        color: colors.onPrimaryContainer,
+                      ),
+                    ),
+                    Text(
+                      'Mobile Programming - Sem Ganjil 2026',
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    role,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          Semantics(
+            label: isDark ? 'Switch to light theme' : 'Switch to dark theme',
+            toggled: isDark,
+            child: Switch.adaptive(
+              key: themeToggleKey,
+              value: isDark,
+              onChanged: onThemeChanged,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Reusable info card (refactor requirement #1). Colors/sizes come from
-/// Theme.of(context) (refactor requirement #2), not hardcoded values.
+class DashboardCards extends StatelessWidget {
+  const DashboardCards({required this.isWide, super.key});
+
+  final bool isWide;
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = <Widget>[
+      const InfoCard(
+        title: 'Current GPA',
+        value: '3.72',
+        icon: Icons.auto_graph,
+      ),
+      const InfoCard(
+        title: 'Credits completed',
+        value: '35 of 144',
+        icon: Icons.school_outlined,
+      ),
+      const InfoCard(
+        title: 'Attendance',
+        value: '96%',
+        icon: Icons.fact_check_outlined,
+      ),
+      const InfoCard(
+        title: 'Upcoming assignments',
+        value: '3 due this week',
+        icon: Icons.assignment_outlined,
+      ),
+      const InfoCard(
+        title: 'Research hours',
+        value: '14 this month',
+        icon: Icons.science_outlined,
+      ),
+      const InfoCard(
+        title: 'Library books',
+        value: '2 checked out',
+        icon: Icons.menu_book_outlined,
+      ),
+    ];
+
+    if (!isWide) {
+      return Column(
+        key: const Key('narrow-layout'),
+        children: addGaps(cards),
+      );
+    }
+
+    return Row(
+      key: const Key('wide-layout'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            children: addGaps([cards[0], cards[2], cards[4]]),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            children: addGaps([cards[1], cards[3], cards[5]]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> addGaps(List<Widget> cards) {
+    return [
+      for (var index = 0; index < cards.length; index++) ...[
+        cards[index],
+        if (index < cards.length - 1) const SizedBox(height: 16),
+      ],
+    ];
+  }
+}
+
 class InfoCard extends StatelessWidget {
   const InfoCard({
     required this.title,
     required this.value,
-    this.icon,
+    required this.icon,
     super.key,
   });
 
   final String title;
   final String value;
-  final IconData? icon;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Semantics(
+      container: true,
       label: '$title: $value',
       child: Card(
-        color: theme.colorScheme.surfaceContainerHighest,
-        child: Padding(
+        margin: EdgeInsets.zero,
+        child: Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              if (icon != null) ...[
-                Icon(icon, color: theme.colorScheme.primary, size: 28),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+              Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colors.secondaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: colors.onSecondaryContainer,
                 ),
               ),
-              Text(
-                value,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: textTheme.labelLarge),
+                    const SizedBox(height: 4),
+                    Text(value, style: textTheme.titleLarge),
+                  ],
                 ),
               ),
             ],
