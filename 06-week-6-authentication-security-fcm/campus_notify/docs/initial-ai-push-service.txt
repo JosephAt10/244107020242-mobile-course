@@ -1,0 +1,107 @@
+import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import '../routes.dart';
+
+final FlutterLocalNotificationsPlugin _local = FlutterLocalNotificationsPlugin();
+String? pendingDeepLink;
+const _announcementChannel = AndroidNotificationChannel(
+  'announcement',
+  'Campus Announcements',
+  description: 'Campus announcement alerts',
+  importance: Importance.high,
+);
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Background isolate: no BuildContext, Riverpod, router, or UI access here.
+  await Firebase.initializeApp();
+}
+
+class PushService {
+  StreamSubscription<String>? _tokenSubscription;
+  StreamSubscription<RemoteMessage>? _foregroundSubscription;
+  StreamSubscription<RemoteMessage>? _openedSubscription;
+  bool _initialized = false;
+
+  Future<bool> initialize({required Future<void> Function(String token) onToken,
+    required void Function(String route) onRoute}) async {
+    if (_initialized) return true;
+    try {
+      await _initLocalNotifications(onRoute);
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.requestPermission(alert: true, badge: true, sound: true);
+      final authorized = settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+      if (!authorized) return false;
+
+      final token = await messaging.getToken();
+      if (token != null) await onToken(token);
+      _tokenSubscription = messaging.onTokenRefresh.listen((fresh) async {
+        // Forward token rotation to the configured backend; never log token values.
+        await onToken(fresh);
+      });
+      await messaging.subscribeToTopic('campus-announcement');
+
+      _foregroundSubscription = FirebaseMessaging.onMessage.listen((message) async {
+        final route = routeFromMessage(message.data);
+        await _local.show(
+          message.hashCode,
+          message.notification?.title ?? 'Campus announcement',
+          message.notification?.body ?? 'Open to view the latest update.',
+          const NotificationDetails(android: AndroidNotificationDetails(
+            'announcement', 'Campus Announcements',
+            channelDescription: 'Campus announcement alerts',
+            importance: Importance.high,
+            priority: Priority.high,
+          ), iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          )),
+          payload: route,
+        );
+      });
+      _openedSubscription = FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        onRoute(routeFromMessage(message.data));
+      });
+      final initial = await messaging.getInitialMessage();
+      if (initial != null) onRoute(routeFromMessage(initial.data));
+      _initialized = true;
+      return true;
+    } on FirebaseException {
+      // Missing google-services.json / GoogleService-Info.plist: app remains usable
+      // for the mock-auth and routing exercises; configure Firebase to enable push.
+      return false;
+    }
+  }
+
+  Future<void> _initLocalNotifications(void Function(String route) onRoute) async {
+    const settings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      iOS: DarwinInitializationSettings(),
+    );
+    await _local.initialize(settings, onDidReceiveNotificationResponse: (response) {
+      final route = response.payload;
+      if (route != null && route.isNotEmpty) {
+        pendingDeepLink = route;
+        onRoute(route);
+      }
+    });
+    await _local.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(_announcementChannel);
+  }
+
+  Future<void> subscribe() async => FirebaseMessaging.instance.subscribeToTopic('campus-announcement');
+  Future<void> unsubscribe() async => FirebaseMessaging.instance.unsubscribeFromTopic('campus-announcement');
+  bool get isInitialized => _initialized;
+
+  Future<void> dispose() async {
+    await _tokenSubscription?.cancel();
+    await _foregroundSubscription?.cancel();
+    await _openedSubscription?.cancel();
+  }
+}

@@ -1,31 +1,30 @@
 class AuthSession {
   const AuthSession({required this.access, required this.refresh});
+
   final String access;
   final String refresh;
 }
 
+/// Demo-only mock authentication. Replace this adapter with Firebase Auth or
+/// an HTTPS campus API before using real accounts. Never treat these values as JWTs.
 class AuthRepository {
-  // REPLACE this point with FirebaseAuth.instance.signInWithEmailAndPassword
-  // or GoogleSignIn once your Firebase backend is ready.
-  Future<AuthSession> login({
-    required String email,
-    required String password,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+  Future<AuthSession> login({required String email, required String password}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!email.contains('@') || password.length < 6) {
-      throw Exception('Invalid email or password');
+      throw const FormatException('Enter a valid email and a password of at least 6 characters.');
     }
-    // Simulated JWT: header.payload.signature (never parse manually
-    // in production, use server-side verification).
+    final safeUser = email.toLowerCase().trim();
     return AuthSession(
-      access: 'mock-access-for-$email',
-      refresh: 'mock-refresh-for-$email',
+      access: 'mock-access-$safeUser',
+      refresh: 'mock-refresh-$safeUser',
     );
   }
 
   Future<String> refresh(String refreshToken) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (refreshToken.isEmpty) throw Exception('Refresh token missing');
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    if (refreshToken.isEmpty || refreshToken == 'mock-refresh-expired') {
+      throw const FormatException('Refresh token expired. Please sign in again.');
+    }
     return 'mock-access-renewed-${DateTime.now().millisecondsSinceEpoch}';
   }
 }
