@@ -9,21 +9,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import 'data/api_client.dart';
-import 'data/auth_repository.dart';
+import 'core/failure.dart';
+import 'features/auth/data/datasources/api_client.dart';
+import 'features/auth/presentation/providers/auth_provider.dart';
+import 'features/auth/presentation/pages/login_page.dart';
 import 'messaging/push_service.dart';
-import 'pages/announcement_page.dart';
-import 'pages/home_page.dart';
-import 'pages/login_page.dart';
-import 'providers/auth_provider.dart';
+import 'messaging/push_status.dart';
+import 'features/announcements/presentation/pages/announcement_page.dart';
+import 'features/announcements/presentation/pages/home_page.dart';
+
+
 import 'routes.dart';
 
 late final ProviderContainer appContainer;
 late final GoRouter appRouter;
-late final _RouterRefresh routerRefresh;
-final ValueNotifier<String?> tokenPreview = ValueNotifier(null);
-final ValueNotifier<bool?> messagingReady = ValueNotifier(null);
-final ValueNotifier<String?> messagingIssue = ValueNotifier(null);
+late final _RouterRefresh _routerRefresh;
 final PushService pushService = PushService();
 bool firebaseInitialized = false;
 
@@ -78,7 +78,9 @@ Future<void> main() async {
   runApp(_BootstrapApp(firebaseReady: firebaseReady));
 }
 
-class _RouterRefresh extends ChangeNotifier {}
+class _RouterRefresh extends ChangeNotifier {
+  void notifyRouteChange() => notifyListeners();
+}
 
 class _BootstrapApp extends StatefulWidget {
   const _BootstrapApp({required this.firebaseReady});
@@ -107,20 +109,32 @@ class _BootstrapAppState extends State<_BootstrapApp> {
           .read(authStateProvider.future)
           .timeout(const Duration(seconds: 20));
       final refresh = _RouterRefresh();
-      container.listen(authStateProvider, (_, __) => refresh.notifyListeners());
+      container.listen(authStateProvider, (_, next) {
+        refresh.notifyRouteChange();
+        if (next.value == true) unawaited(startPushService());
+      });
       final router = GoRouter(
         initialLocation: loggedIn ? AppRoutes.home : AppRoutes.login,
         refreshListenable: refresh,
         redirect: (context, state) {
           final authenticated = container.read(authStateProvider).value ?? false;
           final goingToLogin = state.matchedLocation == AppRoutes.login;
-          if (!authenticated && !goingToLogin) return AppRoutes.login;
-          if (authenticated && goingToLogin) return AppRoutes.home;
+          if (!authenticated && !goingToLogin) {
+            final destination = Uri.encodeComponent(state.uri.toString());
+            return '${AppRoutes.login}?redirect=$destination';
+          }
+          if (authenticated && goingToLogin) {
+            final destination = state.uri.queryParameters['redirect'];
+            if (destination != null && destination.startsWith('/') && !destination.startsWith('//')) {
+              return destination;
+            }
+            return AppRoutes.home;
+          }
           return null;
         },
         routes: [
-          GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginPage()),
-          GoRoute(path: AppRoutes.home, builder: (_, __) => const HomePage()),
+          GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginPage()),
+          GoRoute(path: AppRoutes.home, builder: (_, _) => const HomePage()),
           GoRoute(
             path: AppRoutes.announcementPattern,
             builder: (_, state) => AnnouncementPage(id: state.pathParameters['id'] ?? ''),
@@ -136,15 +150,18 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       }
 
       appContainer = container;
-      routerRefresh = refresh;
+      _routerRefresh = refresh;
       appRouter = router;
+      if (loggedIn && widget.firebaseReady) unawaited(startPushService());
       setState(() {
         _ready = true;
       });
     } catch (error) {
       container.dispose();
       if (!mounted) return;
-      setState(() => _startupError = error.toString());
+      setState(() => _startupError = error is Failure
+          ? error.message
+          : 'Campus Notify could not restore its saved session. Please retry.');
     }
   }
 
@@ -220,7 +237,7 @@ class _CampusNotifyAppState extends State<CampusNotifyApp> {
   void dispose() {
     unawaited(pushService.dispose());
     appRouter.dispose();
-    routerRefresh.dispose();
+    _routerRefresh.dispose();
     appContainer.dispose();
     tokenPreview.dispose();
     messagingReady.dispose();

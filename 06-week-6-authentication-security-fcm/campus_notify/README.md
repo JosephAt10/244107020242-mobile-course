@@ -7,6 +7,7 @@
 | Absen | 17 |
 | NIM | 244107020242 |
 
+
 ## Objective
 
 Build a campus announcement app that demonstrates mock authentication, secure
@@ -139,15 +140,15 @@ states or a custom deep-link destination.
 - [Truncated token and Firebase-ready home screen] ![image](./screenshots/2.png)
 - [Firebase Console notification banner while app is backgrounded] ![image](./screenshots/1.png)
 - [Campus Notify opened after tapping the banner] ![image](./screenshots/2.png)
-- [Login (mock/Firebase Auth) with a route guard: unauthenticated users are always redirected to /login.] 
-  unathenticated user see the notification 
+- [Login (mock auth; not Firebase Auth) with a route guard: unauthenticated users are always redirected to /login.] 
+  unathenticated user see the notification
 
   ![image](./screenshots/7.png)
 
   Unathenticated click the notifcation
 
   ![image](./screenshots/8.png)
-  
+
 - [ ] Foreground local notification banner and `/announcement/3` destination. ![image](./screenshots/5.png)
 - [ ] Background notification tap landing on `/announcement/3` with custom
   data. ![image](./screenshots/6.png)
@@ -170,9 +171,7 @@ states or a custom deep-link destination.
 
 ## Initial AI output
 
-The initial draft reviewed for this assignment is preserved verbatim in
-[`initial-ai-push-service.txt`](initial-ai-push-service.txt). It is the
-PushService draft that was first pasted into the project discussion.
+This checkout has no preserved transcript of the first PushService draft, so I cannot provide it as verbatim output. The implementation changes and their reasons are summarized below.
 
 ## Manual validation and fixes
 
