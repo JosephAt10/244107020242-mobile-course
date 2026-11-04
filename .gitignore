@@ -46,3 +46,11 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+
+/09-week-9-ai-assisted-development/build/
+/09-week-9-ai-assisted-development/.dart_tool/
+/09-week-9-ai-assisted-development/android/local.properties
+/09-week-9-ai-assisted-development/.flutter-plugins
+/09-week-9-ai-assisted-development/.flutter-plugins-dependencies
+/09-week-9-ai-assisted-development/.packages
