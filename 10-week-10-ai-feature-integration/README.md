@@ -86,15 +86,22 @@ Automated tests cover the daily request policy, Gemini SSE chunk parsing and req
 - **Fallback:** Missing/invalid key, rate limit, service failure, malformed/empty reply, timeout, and lost connectivity produce a clear message and retry path. The user can continue using locally stored notes while the AI service is unavailable.
 - **Mobile AI UX lesson:** Streaming makes progress visible, but it needs a loading state, short messages, a nearby privacy reminder, and a usable error path. Model answers still need independent checking.
 
-## Screenshots to capture
+## Screenshots
 
-Save your Week 10 emulator and terminal evidence under `screenshots/` using these names:
+### AI chat empty state
+![AI Study Assistant empty state and privacy notice](screenshots/1.png)
 
-1. `chat-empty.png` — AI Study Assistant first-open empty state and privacy notice.
-2. `secure-key-settings.png` — Settings showing the saved-key status without revealing the key.
-3. `chat-streaming.png` — a non-sensitive study prompt and its completed streamed answer.
-4. `chat-fallback.png` — a friendly fallback/error state (for example, temporarily disconnect the emulator or remove the key).
-5. `checks.png` — terminal results for analyze, format, and tests.
+### Secure API key settings
+![API key saved status with the key hidden](screenshots/4.png)
+
+### Streamed study response
+![Study prompt and AI response](screenshots/2.png)
+
+### Error fallback
+![AI service error and retry fallback](screenshots/3.png)
+
+### Automated checks
+![Analyze, format, and test results](screenshots/5.png)![Analyze, format, and test results](screenshots/6.png)![Analyze, format, and test results](screenshots/7.png)
 
 ## Result
 
