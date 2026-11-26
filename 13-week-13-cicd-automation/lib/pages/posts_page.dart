@@ -28,9 +28,7 @@ class PostsPage extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              offline
-                  ? 'Showing the local cache; network refresh is paused.'
-                  : 'Local posts appear first, then refresh from JSONPlaceholder.',
+              offline ? 'Showing the local cache; network refresh is paused.' : 'Local posts appear first, then refresh from JSONPlaceholder.',
             ),
           ),
           Expanded(
@@ -65,4 +63,3 @@ class PostsPage extends ConsumerWidget {
     );
   }
 }
-Formatted 1 file (0 changed) in 0.01 seconds.

@@ -34,7 +34,7 @@ Private tokens, passwords, and signing material belong in restricted GitHub Acti
 
 | Check | Result |
 | --- | --- |
-| Formatting | `dart format --output=none --set-exit-if-changed .` reports 30 files and zero changes. |
+| Formatting | `dart format --output=none --set-exit-if-changed .` reports 33 files and zero changes. |
 | Static analysis | `dart analyze --fatal-infos` reports no issues. |
 | Flutter tests | The Windows runner stops while compiling the `objective_c` native asset hook (`-1073741816`) before test cases run. |
 | Android APK | The local release build reached Gradle's `assembleRelease` task but did not finish in this environment. |

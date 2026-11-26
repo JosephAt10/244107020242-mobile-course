@@ -26,37 +26,40 @@ class _FakeApiKeyStore implements ApiKeyStore {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  test('streams Gemini response chunks and sends the key in a header', () async {
-    late http.Request captured;
-    final repository = GeminiChatRepository(
-      keyStore: _FakeApiKeyStore('test-key-placeholder'),
-      clock: () => DateTime(2026, 11, 5),
-      client: MockClient((request) async {
-        captured = request;
-        expect(request.headers['x-goog-api-key'], 'test-key-placeholder');
-        expect(request.url.queryParameters.containsKey('key'), isFalse);
-        final body = jsonDecode(request.body) as Map<String, dynamic>;
-        expect(body['system_instruction'], isNotNull);
-        return http.Response.bytes(
-          utf8.encode(
-            'data: {"candidates":[{"content":{"parts":[{"text":"Hello "}]}}]}\n\n'
-            'data: {"candidates":[{"content":{"parts":[{"text":"student."}]}}]}\n\n',
-          ),
-          200,
-          headers: {'content-type': 'text/event-stream'},
-        );
-      }),
-    );
+  test(
+    'streams Gemini response chunks and sends the key in a header',
+    () async {
+      late http.Request captured;
+      final repository = GeminiChatRepository(
+        keyStore: _FakeApiKeyStore('test-key-placeholder'),
+        clock: () => DateTime(2026, 11, 5),
+        client: MockClient((request) async {
+          captured = request;
+          expect(request.headers['x-goog-api-key'], 'test-key-placeholder');
+          expect(request.url.queryParameters.containsKey('key'), isFalse);
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['system_instruction'], isNotNull);
+          return http.Response.bytes(
+            utf8.encode(
+              'data: {"candidates":[{"content":{"parts":[{"text":"Hello "}]}}]}\n\n'
+              'data: {"candidates":[{"content":{"parts":[{"text":"student."}]}}]}\n\n',
+            ),
+            200,
+            headers: {'content-type': 'text/event-stream'},
+          );
+        }),
+      );
 
-    final chunks = await repository.replyTo([
-      const ChatMessage(role: ChatRole.user, text: 'Help me study'),
-    ]).toList();
+      final chunks = await repository.replyTo([
+        const ChatMessage(role: ChatRole.user, text: 'Help me study'),
+      ]).toList();
 
-    expect(chunks, ['Hello ', 'student.']);
-    expect(captured.url.path, contains(':streamGenerateContent'));
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getInt('ai_request_count'), 1);
-  });
+      expect(chunks, ['Hello ', 'student.']);
+      expect(captured.url.path, contains(':streamGenerateContent'));
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('ai_request_count'), 1);
+    },
+  );
 
   test('returns a safe setup message when no API key is saved', () async {
     final repository = GeminiChatRepository(
@@ -78,4 +81,3 @@ void main() {
     );
   });
 }
-Formatted 1 file (0 changed) in 0.01 seconds.

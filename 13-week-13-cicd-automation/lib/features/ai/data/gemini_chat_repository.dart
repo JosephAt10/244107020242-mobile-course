@@ -160,8 +160,7 @@ class GeminiChatRepository implements ChatRepository {
   }
 
   String _messageForStatus(int statusCode) => switch (statusCode) {
-    400 || 401 || 403 =>
-      'Gemini rejected the request or API key. Check the key and API access in Settings.',
+    400 || 401 || 403 => 'Gemini rejected the request or API key. Check the key and API access in Settings.',
     429 => 'Gemini rate limit reached. Wait a little, then retry.',
     >= 500 =>
       'Gemini is temporarily unavailable. Retry later or study offline.',
@@ -178,4 +177,3 @@ class AiChatException implements Exception {
   @override
   String toString() => message;
 }
-Formatted 1 file (0 changed) in 0.01 seconds.
