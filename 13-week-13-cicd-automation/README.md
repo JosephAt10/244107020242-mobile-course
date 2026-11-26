@@ -13,7 +13,7 @@ This Week 13 project applies an automated Flutter verification and Android build
 
 ## Pipeline
 
-The workflow runs for pushes to `main`, pull requests targeting `main`, and manual dispatch. It checks out the repository, installs the stable Flutter SDK, downloads dependencies, then runs these checks in order:
+The workflow runs for pushes to `main`, pull requests targeting `main`, and manual dispatch. It checks out the repository, installs Flutter `3.47.2` (the version used for this project), records the toolchain version, downloads dependencies, then runs these checks in order:
 
 1. `dart format --output=none --set-exit-if-changed .`
 2. `flutter analyze --fatal-infos`
